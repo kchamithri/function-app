@@ -1,10 +1,29 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using System.Net;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace jobs.Function
 {
+    public class Job
+    {
+        public string id { get; set; }
+        public string companyName { get; set; }
+        public string companyUrl { get; set; }
+        public string link { get; set; }
+        public string location { get; set; }
+        public DateTime postedOn { get; set; }
+        public List<string> skills { get; set; }
+        public string title { get; set; }
+        public string type { get; set; }
+    }
+
     public class get_jobs
     {
         private readonly ILogger<get_jobs> _logger;
@@ -14,11 +33,26 @@ namespace jobs.Function
             _logger = logger;
         }
 
-        [Function("get_jobs")]
-        public IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req)
+        [Function("get-jobs")]
+        public async Task<HttpResponseData> RunAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
+                                                      [CosmosDBInput("job-posting-app-db", "Job",
+                                                      Connection = "CosmosDbConnectionString",
+                                                      SqlQuery = "SELECT * FROM c")] IEnumerable<Job> jobs,
+                                                      FunctionContext executionContext)
         {
-            _logger.LogInformation("C# HTTP trigger function processed a request.");
-            return new OkObjectResult("Welcome to Azure Functions!");
+            var logger = executionContext.GetLogger("get-jobs");
+            logger.LogInformation("C# HTTP trigger function processed a request.");
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            var outputJobs = jobs.ToList();
+
+            // Serialize the output jobs to JSON
+            var json = JsonSerializer.Serialize(outputJobs);
+
+            // Write the JSON content to the response body
+            await response.WriteStringAsync(json);
+
+            return response;
         }
     }
 }
