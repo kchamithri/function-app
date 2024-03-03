@@ -20,6 +20,7 @@ namespace addJob.Function
         public List<string> skills { get; set; }
         public string title { get; set; }
         public string type { get; set; }
+
         public string description { get; set; }
 
     }
