@@ -11,7 +11,7 @@ namespace addJob.Function
 {
     public class Job
     {
-        public string id { get; set; }
+        public string id { get; set; } = Guid.NewGuid().ToString();
         public string companyName { get; set; }
         public string companyUrl { get; set; }
         public string link { get; set; }
@@ -20,6 +20,7 @@ namespace addJob.Function
         public List<string> skills { get; set; }
         public string title { get; set; }
         public string type { get; set; }
+        public string description { get; set; }
 
     }
 
