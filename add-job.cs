@@ -42,7 +42,7 @@ namespace addJob.Function
             public HttpResponseData HttpResponse { get; set; }
         }
 
-        [Function("add_job")]
+        [Function("add-job")]
         public static async Task<MultiResponse> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req,
             FunctionContext executionContext)
         {
