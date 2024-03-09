@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+
 namespace jobs.Function
 {
     public class Job
@@ -45,10 +46,26 @@ namespace jobs.Function
             logger.LogInformation("C# HTTP trigger function processed a request.");
 
             var response = req.CreateResponse(HttpStatusCode.OK);
+
+            // Check if job data is available in Redis Cache
+            var cachedJobsJson = await RedisCacheHelper.GetDataFromCacheAsync("jobs");
+            if (!string.IsNullOrEmpty(cachedJobsJson))
+            {
+                // If data is found in cache, return it
+                _logger.LogInformation("Data retrieved from Redis Cache");
+                await response.WriteStringAsync(cachedJobsJson);
+                return response;
+            }
+
+            // If data is not found in cache, fetch it from Cosmos DB
             var outputJobs = jobs.ToList();
+            _logger.LogInformation("Data fetched from Cosmos DB");
 
             // Serialize the output jobs to JSON
             var json = JsonSerializer.Serialize(outputJobs);
+
+            // Store data in Redis Cache
+            await RedisCacheHelper.StoreDataInCacheAsync("jobs", json);
 
             // Write the JSON content to the response body
             await response.WriteStringAsync(json);

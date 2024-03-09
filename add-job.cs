@@ -20,7 +20,6 @@ namespace addJob.Function
         public List<string> skills { get; set; }
         public string title { get; set; }
         public string type { get; set; }
-
         public string description { get; set; }
 
     }
@@ -40,32 +39,49 @@ namespace addJob.Function
                 Connection = "CosmosDbConnectionString", CreateIfNotExists = true)]
             public Job Job { get; set; }
             public HttpResponseData HttpResponse { get; set; }
+            public string CachedJobJson { get; set; } // Property to hold cached job data
         }
 
         [Function("add-job")]
         public static async Task<MultiResponse> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req,
-            FunctionContext executionContext)
+    FunctionContext executionContext)
         {
             var logger = executionContext.GetLogger("get-jobs");
             logger.LogInformation("C# HTTP trigger function processed a request.");
 
-            // Get the request body
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-
-            // Deserialize the JSON object
-            Job job = JsonSerializer.Deserialize<Job>(requestBody);
-
-            // Log the received job details
-            logger.LogInformation("Received Job Details: {JobDetails}", JsonSerializer.Serialize(job));
-
-            var response = req.CreateResponse(System.Net.HttpStatusCode.OK);
-
-            // Return a response to both HTTP trigger and Azure Cosmos DB output binding.
-            return new MultiResponse()
+            try
             {
-                Job = job,
-                HttpResponse = response
-            };
+                // Get the request body
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+
+                // Deserialize the JSON object
+                Job job = JsonSerializer.Deserialize<Job>(requestBody);
+
+                // Log the received job details
+                logger.LogInformation("Received Job Details: {JobDetails}", JsonSerializer.Serialize(job));
+
+                var response = req.CreateResponse(HttpStatusCode.OK);
+                // Save the job data to cache
+                // await RedisCacheHelper.SaveJobToCacheAsync(job);
+
+                // Return a response to both HTTP trigger and Azure Cosmos DB output binding.
+                return new MultiResponse()
+                {
+                    Job = job,
+                    HttpResponse = response
+                };
+
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error processing the request.");
+                return new MultiResponse()
+                {
+                    Job = null,
+                    HttpResponse = req.CreateResponse(HttpStatusCode.InternalServerError)
+                };
+            }
         }
+
     }
 }
